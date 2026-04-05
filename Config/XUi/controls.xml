@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <configs>
     <append xpath="/controls">
-        <teleport_pad_entry>
+        <teleporter_entry>
             <rect depth="1" width="448" height="40"
-                  controller="TeleportPadEntry, TeleportPads"
+                  controller="TeleporterEntry, Teleporters"
                   on_press="true">
 
                 <sprite depth="2" name="rowBg" sprite="menu_empty3px"
@@ -15,7 +15,7 @@
                         pos="0,-1" hovercolor="80,180,255,60"/>
 
                 <label depth="4" name="lblName" pos="8,-4" width="200" height="30"
-                       text="{padname}" font_size="22" effect="outline"
+                       text="{teleportername}" font_size="22" effect="outline"
                        justify="left" color="255,255,255"/>
 
                 <label depth="4" name="lblDistance" pos="212,-4" width="80" height="30"
@@ -31,6 +31,6 @@
                               defaultcolor="40,80,120" hovercolor="80,180,255"
                               sound="@:Sounds/UI/ui_menu_click.wav"/>
             </rect>
-        </teleport_pad_entry>
+        </teleporter_entry>
     </append>
 </configs>

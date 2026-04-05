@@ -1,14 +1,14 @@
 using System.Reflection;
 using HarmonyLib;
 
-public class TeleportPadsInit : IModApi
+public class TeleportersInit : IModApi
 {
     public void InitMod(Mod _modInstance)
     {
-        Log.Out("[TeleportPads] Loading mod...");
-        var harmony = new HarmonyLib.Harmony("com.greg.teleportpads");
+        Log.Out("[Teleporters] Loading mod...");
+        var harmony = new HarmonyLib.Harmony("com.greg.teleporters");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
-        var _ = TeleportPadManager.Instance;
-        Log.Out("[TeleportPads] Mod loaded successfully.");
+        var _ = TeleporterManager.Instance;
+        Log.Out("[Teleporters] Mod loaded successfully.");
     }
 }

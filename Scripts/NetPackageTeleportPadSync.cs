@@ -1,33 +1,33 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NetPackageTeleportPadSync : NetPackage
+public class NetPackageTeleporterSync : NetPackage
 {
-    private Dictionary<Vector3i, string> _padMap;
+    private Dictionary<Vector3i, string> _teleporterMap;
 
-    public NetPackageTeleportPadSync Setup(Dictionary<Vector3i, string> padMap)
+    public NetPackageTeleporterSync Setup(Dictionary<Vector3i, string> teleporterMap)
     {
-        _padMap = padMap;
+        _teleporterMap = teleporterMap;
         return this;
     }
 
     public override void read(PooledBinaryReader br)
     {
-        _padMap = new Dictionary<Vector3i, string>();
+        _teleporterMap = new Dictionary<Vector3i, string>();
         var count = br.ReadInt32();
         for (int i = 0; i < count; i++)
         {
             var pos = new Vector3i(br.ReadInt32(), br.ReadInt32(), br.ReadInt32());
             var name = br.ReadString();
-            _padMap[pos] = name;
+            _teleporterMap[pos] = name;
         }
     }
 
     public override void write(PooledBinaryWriter bw)
     {
         base.write(bw);
-        bw.Write(_padMap.Count);
-        foreach (var entry in _padMap)
+        bw.Write(_teleporterMap.Count);
+        foreach (var entry in _teleporterMap)
         {
             bw.Write(entry.Key.x);
             bw.Write(entry.Key.y);
@@ -39,15 +39,15 @@ public class NetPackageTeleportPadSync : NetPackage
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         if (world == null) return;
-        TeleportPadManager.Instance.ReplaceMap(_padMap);
+        TeleporterManager.Instance.ReplaceMap(_teleporterMap);
     }
 
     public override int GetLength()
     {
         int len = 4;
-        if (_padMap != null)
+        if (_teleporterMap != null)
         {
-            foreach (var entry in _padMap)
+            foreach (var entry in _teleporterMap)
                 len += 12 + (entry.Value != null ? entry.Value.Length * 2 + 4 : 4);
         }
         return len;

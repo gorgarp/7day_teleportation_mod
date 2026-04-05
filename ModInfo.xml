@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xml>
-    <Name value="TeleportPads" />
-    <DisplayName value="Teleport Pads" />
-    <Version value="1.0.0" />
-    <Description value="Craftable teleportation pads with a GUI destination picker. Place pads, name them, and teleport between any networked pad." />
+    <Name value="Teleporters" />
+    <DisplayName value="Teleporters" />
+    <Version value="1.1.6" />
+    <Description value="Craftable teleporters with a GUI destination picker. Place teleporters, name them, and teleport between any networked teleporter." />
     <Author value="Greg" />
     <Website value="" />
 </xml>

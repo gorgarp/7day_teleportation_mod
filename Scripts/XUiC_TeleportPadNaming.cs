@@ -1,27 +1,36 @@
-using Platform;
 using UnityEngine;
 
-public class XUiC_TeleportPadNaming : XUiController
+public class XUiC_TeleporterNaming : XUiController
 {
     public static string ID = "";
 
-    private Vector3i padPosition;
+    private Vector3i teleporterPosition;
+    private int clrIdx;
     private string currentName = "";
     private XUiC_TextInput textInput;
+    private XUiC_SimpleButton btnSave;
+    private XUiC_SimpleButton btnCancel;
 
     public override void Init()
     {
         base.Init();
         ID = WindowGroup.ID;
 
-        textInput = GetChildById("txtPadName") as XUiC_TextInput;
+        textInput = GetChildById("txtTeleporterName") as XUiC_TextInput;
 
         foreach (var child in GetChildrenByType<XUiC_SimpleButton>())
         {
             string id = child.ViewComponent?.ID ?? "";
-            Log.Out("[TeleportPads] Naming found SimpleButton: " + id);
-            if (id == "btnSave") child.OnPressed += OnSavePressed;
-            if (id == "btnCancel") child.OnPressed += OnCancelPressed;
+            if (id == "btnSave")
+            {
+                btnSave = child;
+                btnSave.OnPressed += OnSavePressed;
+            }
+            if (id == "btnCancel")
+            {
+                btnCancel = child;
+                btnCancel.OnPressed += OnCancelPressed;
+            }
         }
 
         if (textInput != null)
@@ -32,24 +41,23 @@ public class XUiC_TeleportPadNaming : XUiController
     {
         base.OnOpen();
         if (textInput != null)
-        {
             textInput.Text = currentName;
-        }
         IsDirty = true;
         RefreshBindings(true);
     }
 
-    public static void Open(LocalPlayerUI _playerUI, Vector3i _blockPos, string _currentName)
+    public static void Open(LocalPlayerUI _playerUI, Vector3i _blockPos, int _clrIdx, string _currentName)
     {
         if (string.IsNullOrEmpty(ID)) return;
 
         var windowGroup = _playerUI.xui.FindWindowGroupByName(ID);
         if (windowGroup == null) return;
 
-        var controller = windowGroup.GetChildByType<XUiC_TeleportPadNaming>();
+        var controller = windowGroup.GetChildByType<XUiC_TeleporterNaming>();
         if (controller != null)
         {
-            controller.padPosition = _blockPos;
+            controller.teleporterPosition = _blockPos;
+            controller.clrIdx = _clrIdx;
             controller.currentName = _currentName ?? "";
         }
 
@@ -74,7 +82,7 @@ public class XUiC_TeleportPadNaming : XUiController
         if (string.IsNullOrEmpty(newName))
         {
             GameManager.ShowTooltip(xui.playerUI.entityPlayer,
-                Localization.Get("teleportpad_name_empty"));
+                Localization.Get("teleporter_name_empty"));
             return;
         }
 
@@ -82,22 +90,23 @@ public class XUiC_TeleportPadNaming : XUiController
             newName = newName.Substring(0, 24);
 
         var world = GameManager.Instance.World;
-        var te = world.GetTileEntity(0, padPosition) as TileEntityTeleportPad;
+        var te = world.GetTileEntity(clrIdx, teleporterPosition) as TileEntityTeleporter;
         if (te != null)
+            te.SetTeleporterName(newName);
+
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (cm.IsServer)
         {
-            te.SetPadName(newName);
+            TeleporterManager.Instance.RegisterTeleporter(teleporterPosition, newName);
         }
-
-        TeleportPadManager.Instance.RegisterPad(padPosition, newName);
-
-        if (!SingletonMonoBehaviour<ConnectionManager>.Instance.IsServer)
+        else
         {
-            SingletonMonoBehaviour<ConnectionManager>.Instance.SendToServer(
-                NetPackageManager.GetPackage<NetPackageTeleportPadRename>().Setup(padPosition, newName));
+            cm.SendToServer(
+                NetPackageManager.GetPackage<NetPackageTeleporterRename>().Setup(teleporterPosition, newName, clrIdx));
         }
 
         GameManager.ShowTooltip(xui.playerUI.entityPlayer,
-            string.Format(Localization.Get("teleportpad_named"), newName));
+            string.Format(Localization.Get("teleporter_named"), newName));
 
         xui.playerUI.windowManager.Close(ID);
     }
@@ -120,10 +129,10 @@ public class XUiC_TeleportPadNaming : XUiController
     public override void Cleanup()
     {
         base.Cleanup();
-        var btnSave = GetChildById("btnSave");
-        if (btnSave != null) btnSave.OnPress -= OnSavePressed;
-        var btnCancel = GetChildById("btnCancel");
-        if (btnCancel != null) btnCancel.OnPress -= OnCancelPressed;
+        if (btnSave != null)
+            btnSave.OnPressed -= OnSavePressed;
+        if (btnCancel != null)
+            btnCancel.OnPressed -= OnCancelPressed;
         if (textInput != null)
             textInput.OnSubmitHandler -= OnTextSubmitted;
     }

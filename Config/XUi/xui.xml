@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <configs>
     <append xpath="/xui/ruleset[@name='default']">
-        <window_group name="teleportPadSelect">
-            <window name="windowTeleportPadSelect"/>
+        <window_group name="teleporterSelect">
+            <window name="windowTeleporterSelect"/>
         </window_group>
-        <window_group name="teleportPadNaming">
-            <window name="windowTeleportPadNaming"/>
+        <window_group name="teleporterNaming">
+            <window name="windowTeleporterNaming"/>
         </window_group>
     </append>
 </configs>

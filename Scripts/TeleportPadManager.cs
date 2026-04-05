@@ -3,25 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-public class TeleportPadManager
+public class TeleporterManager
 {
-    private const string SAVE_FILE = "TeleportPads.dat";
+    private const string SAVE_FILE = "Teleporters.dat";
     private static readonly byte Version = 1;
 
-    private Dictionary<Vector3i, string> PadMap = new Dictionary<Vector3i, string>();
-    private static TeleportPadManager _instance;
+    private Dictionary<Vector3i, string> TeleporterMap = new Dictionary<Vector3i, string>();
+    private readonly object _lock = new object();
+    private static TeleporterManager _instance;
+    private static readonly object _singletonLock = new object();
     private ThreadManager.ThreadInfo dataSaveThreadInfo;
 
-    private ConnectionManager _connectionManager => SingletonMonoBehaviour<ConnectionManager>.Instance;
-
-    public static TeleportPadManager Instance
+    public static TeleporterManager Instance
     {
         get
         {
             if (_instance == null)
             {
-                _instance = new TeleportPadManager();
-                _instance.Init();
+                lock (_singletonLock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new TeleporterManager();
+                        _instance.Init();
+                    }
+                }
             }
             return _instance;
         }
@@ -29,107 +35,131 @@ public class TeleportPadManager
 
     public void Init()
     {
-        if (!_connectionManager.IsServer) return;
-        Log.Out("[TeleportPads] Initializing TeleportPadManager...");
         ModEvents.GameStartDone.RegisterHandler(OnGameStartDone);
         ModEvents.PlayerSpawnedInWorld.RegisterHandler(OnPlayerSpawned);
     }
 
     private void OnGameStartDone(ref ModEvents.SGameStartDoneData data)
     {
-        Log.Out("[TeleportPads] Loading pad data...");
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (cm == null || !cm.IsServer) return;
+        Log.Out("[Teleporters] Loading teleporter data...");
         Load();
     }
 
     private void OnPlayerSpawned(ref ModEvents.SPlayerSpawnedInWorldData data)
     {
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (cm == null || !cm.IsServer) return;
         if (data.ClientInfo == null) return;
-        Log.Out($"[TeleportPads] Syncing pad map to player {data.ClientInfo.entityId} ({PadMap.Count} pads)");
-        var package = NetPackageManager.GetPackage<NetPackageTeleportPadSync>();
-        package.Setup(PadMap);
+
+        Dictionary<Vector3i, string> snapshot;
+        lock (_lock)
+        {
+            snapshot = new Dictionary<Vector3i, string>(TeleporterMap);
+        }
+
+        var package = NetPackageManager.GetPackage<NetPackageTeleporterSync>();
+        package.Setup(snapshot);
         data.ClientInfo.SendPackage(package);
     }
 
-    public void RegisterPad(Vector3i position, string name)
+    public void RegisterTeleporter(Vector3i position, string name)
     {
         if (string.IsNullOrEmpty(name)) return;
 
-        if (!_connectionManager.IsServer)
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (!cm.IsServer)
         {
-            _connectionManager.SendToServer(
-                NetPackageManager.GetPackage<NetPackageTeleportPadAdd>().Setup(position, name));
+            cm.SendToServer(
+                NetPackageManager.GetPackage<NetPackageTeleporterAdd>().Setup(position, name));
             return;
         }
 
-        if (PadMap.ContainsKey(position))
+        lock (_lock)
         {
-            if (PadMap[position] == name) return;
-            PadMap[position] = name;
-        }
-        else
-        {
-            PadMap.Add(position, name);
+            if (TeleporterMap.TryGetValue(position, out var existing) && existing == name) return;
+            TeleporterMap[position] = name;
         }
 
-        _connectionManager.SendPackage(
-            NetPackageManager.GetPackage<NetPackageTeleportPadAdd>().Setup(position, name));
+        cm.SendPackage(
+            NetPackageManager.GetPackage<NetPackageTeleporterAdd>().Setup(position, name));
         Save();
     }
 
-    public void RemovePad(Vector3i position)
+    public void RemoveTeleporter(Vector3i position)
     {
-        if (!_connectionManager.IsServer)
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (!cm.IsServer)
         {
-            _connectionManager.SendToServer(
-                NetPackageManager.GetPackage<NetPackageTeleportPadRemove>().Setup(position));
+            cm.SendToServer(
+                NetPackageManager.GetPackage<NetPackageTeleporterRemove>().Setup(position));
             return;
         }
 
-        PadMap.Remove(position);
-        _connectionManager.SendPackage(
-            NetPackageManager.GetPackage<NetPackageTeleportPadRemove>().Setup(position));
+        lock (_lock)
+        {
+            TeleporterMap.Remove(position);
+        }
+
+        cm.SendPackage(
+            NetPackageManager.GetPackage<NetPackageTeleporterRemove>().Setup(position));
         Save();
     }
 
-    public void RenamePad(Vector3i position, string newName)
+    public void RenameTeleporter(Vector3i position, string newName)
     {
         if (string.IsNullOrEmpty(newName))
         {
-            RemovePad(position);
+            RemoveTeleporter(position);
             return;
         }
-        RegisterPad(position, newName);
+        RegisterTeleporter(position, newName);
     }
 
     public void ReplaceMap(Dictionary<Vector3i, string> newMap)
     {
-        if (_connectionManager.IsServer) return;
-        PadMap.Clear();
-        foreach (var entry in newMap)
-            PadMap[entry.Key] = entry.Value;
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (cm != null && cm.IsServer) return;
+
+        lock (_lock)
+        {
+            TeleporterMap.Clear();
+            foreach (var entry in newMap)
+                TeleporterMap[entry.Key] = entry.Value;
+        }
     }
 
     public void AddFromNetwork(Vector3i position, string name)
     {
         if (string.IsNullOrEmpty(name)) return;
-        PadMap[position] = name;
 
-        if (_connectionManager.IsServer)
+        lock (_lock)
         {
-            _connectionManager.SendPackage(
-                NetPackageManager.GetPackage<NetPackageTeleportPadAdd>().Setup(position, name));
+            TeleporterMap[position] = name;
+        }
+
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (cm.IsServer)
+        {
+            cm.SendPackage(
+                NetPackageManager.GetPackage<NetPackageTeleporterAdd>().Setup(position, name));
             Save();
         }
     }
 
     public void RemoveFromNetwork(Vector3i position)
     {
-        PadMap.Remove(position);
-
-        if (_connectionManager.IsServer)
+        lock (_lock)
         {
-            _connectionManager.SendPackage(
-                NetPackageManager.GetPackage<NetPackageTeleportPadRemove>().Setup(position));
+            TeleporterMap.Remove(position);
+        }
+
+        var cm = SingletonMonoBehaviour<ConnectionManager>.Instance;
+        if (cm.IsServer)
+        {
+            cm.SendPackage(
+                NetPackageManager.GetPackage<NetPackageTeleporterRemove>().Setup(position));
             Save();
         }
     }
@@ -137,43 +167,55 @@ public class TeleportPadManager
     public List<KeyValuePair<Vector3i, string>> GetDestinations(Vector3i excludePos)
     {
         var result = new List<KeyValuePair<Vector3i, string>>();
-        foreach (var entry in PadMap)
+        lock (_lock)
         {
-            if (entry.Key != excludePos)
-                result.Add(entry);
+            foreach (var entry in TeleporterMap)
+            {
+                if (entry.Key != excludePos)
+                    result.Add(entry);
+            }
         }
         result.Sort((a, b) => string.Compare(a.Value, b.Value, StringComparison.OrdinalIgnoreCase));
         return result;
     }
 
-    public string GetPadName(Vector3i position)
+    public string GetTeleporterName(Vector3i position)
     {
-        return PadMap.TryGetValue(position, out var name) ? name : "";
+        lock (_lock)
+        {
+            return TeleporterMap.TryGetValue(position, out var name) ? name : "";
+        }
     }
 
-    public int PadCount => PadMap.Count;
+    public int TeleporterCount
+    {
+        get { lock (_lock) { return TeleporterMap.Count; } }
+    }
 
     private void Save()
     {
-        if (dataSaveThreadInfo != null && ThreadManager.ActiveThreads.ContainsKey("silent_TeleportPadSave"))
+        if (dataSaveThreadInfo != null && ThreadManager.ActiveThreads.ContainsKey("silent_TeleporterSave"))
             return;
 
         var stream = MemoryPools.poolMemoryStream.AllocSync(true);
         using (var bw = MemoryPools.poolBinaryWriter.AllocSync(false))
         {
             bw.SetBaseStream(stream);
-            bw.Write(Version);
-            bw.Write(PadMap.Count);
-            foreach (var entry in PadMap)
+            lock (_lock)
             {
-                bw.Write(entry.Key.x);
-                bw.Write(entry.Key.y);
-                bw.Write(entry.Key.z);
-                bw.Write(entry.Value);
+                bw.Write(Version);
+                bw.Write(TeleporterMap.Count);
+                foreach (var entry in TeleporterMap)
+                {
+                    bw.Write(entry.Key.x);
+                    bw.Write(entry.Key.y);
+                    bw.Write(entry.Key.z);
+                    bw.Write(entry.Value);
+                }
             }
         }
 
-        dataSaveThreadInfo = ThreadManager.StartThread("silent_TeleportPadSave", null,
+        dataSaveThreadInfo = ThreadManager.StartThread("silent_TeleporterSave", null,
             new ThreadManager.ThreadFunctionLoopDelegate(SaveThreaded), null, stream, null, false);
     }
 
@@ -194,58 +236,58 @@ public class TeleportPadManager
 
     private void Load()
     {
-        PadMap.Clear();
-        var path = $"{GameIO.GetSaveGameDir()}/{SAVE_FILE}";
+        lock (_lock)
+        {
+            TeleporterMap.Clear();
+        }
 
+        var path = $"{GameIO.GetSaveGameDir()}/{SAVE_FILE}";
         if (!File.Exists(path))
         {
-            Log.Out("[TeleportPads] No save file found, starting fresh.");
+            Log.Out("[Teleporters] No save file found, starting fresh.");
             return;
         }
 
         try
         {
-            using (var fs = File.OpenRead(path))
-            using (var br = MemoryPools.poolBinaryReader.AllocSync(false))
-            {
-                br.SetBaseStream(fs);
-                br.ReadByte();
-                var count = br.ReadInt32();
-                for (int i = 0; i < count; i++)
-                {
-                    var pos = new Vector3i(br.ReadInt32(), br.ReadInt32(), br.ReadInt32());
-                    var name = br.ReadString();
-                    PadMap[pos] = name;
-                }
-            }
-            Log.Out($"[TeleportPads] Loaded {PadMap.Count} pads.");
+            LoadFromFile(path);
+            Log.Out($"[Teleporters] Loaded {TeleporterCount} teleporters.");
         }
         catch (Exception ex)
         {
-            Log.Error($"[TeleportPads] Error loading pad data: {ex.Message}");
+            Log.Error($"[Teleporters] Error loading teleporter data: {ex.Message}");
             var backup = $"{path}.bak";
             if (File.Exists(backup))
             {
                 try
                 {
-                    using (var fs = File.OpenRead(backup))
-                    using (var br = MemoryPools.poolBinaryReader.AllocSync(false))
-                    {
-                        br.SetBaseStream(fs);
-                        br.ReadByte();
-                        var count = br.ReadInt32();
-                        for (int i = 0; i < count; i++)
-                        {
-                            var pos = new Vector3i(br.ReadInt32(), br.ReadInt32(), br.ReadInt32());
-                            var name = br.ReadString();
-                            PadMap[pos] = name;
-                        }
-                    }
-                    Log.Out($"[TeleportPads] Loaded {PadMap.Count} pads from backup.");
+                    LoadFromFile(backup);
+                    Log.Out($"[Teleporters] Loaded {TeleporterCount} teleporters from backup.");
                 }
                 catch (Exception ex2)
                 {
-                    Log.Error($"[TeleportPads] Error loading backup: {ex2.Message}");
+                    Log.Error($"[Teleporters] Error loading backup: {ex2.Message}");
+                }
+            }
+        }
+    }
+
+    private void LoadFromFile(string filePath)
+    {
+        using (var fs = File.OpenRead(filePath))
+        using (var br = MemoryPools.poolBinaryReader.AllocSync(false))
+        {
+            br.SetBaseStream(fs);
+            br.ReadByte();
+            var count = br.ReadInt32();
+            lock (_lock)
+            {
+                TeleporterMap.Clear();
+                for (int i = 0; i < count; i++)
+                {
+                    var pos = new Vector3i(br.ReadInt32(), br.ReadInt32(), br.ReadInt32());
+                    var name = br.ReadString();
+                    TeleporterMap[pos] = name;
                 }
             }
         }

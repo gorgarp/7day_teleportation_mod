@@ -1,21 +1,21 @@
-# Teleport Pads
+# Teleporters
 
-A 7 Days to Die (V2.6) mod that adds craftable teleportation pads. Place pads around the world, name them, and teleport instantly between any pad from a GUI destination picker.
+A 7 Days to Die (V1.2) mod that adds craftable teleporters. Place them around the world, name them, and teleport instantly between any teleporter from a GUI destination picker.
 
 ## Features
 
-- **Craftable** at a workbench (requires Advanced Engineering)
-- **Blue-tinted** control panel model for easy identification
-- **Naming** - give each pad a custom name
-- **Networked** - every pad can teleport to every other pad
+- **Craftable** at a workbench (unlocked via Electrician perk, tier 3)
+- **Naming** - give each teleporter a custom name (up to 24 characters)
+- **Networked** - every teleporter can reach every other teleporter
 - **Search & filter** - type to filter the destination list
-- **Sortable** - sort destinations by name (A-Z / Z-A) or distance (nearest / farthest)
-- **Paginated** - handles large numbers of pads with prev/next navigation
-- **Multiplayer** - pad data syncs between server and clients
+- **Sortable** - sort by name or distance
+- **Paginated** - prev/next navigation for large lists
+- **Multiplayer** - teleporter data syncs between server and clients
+- **Chunk pre-loading** - destination chunks load before teleporting to prevent falling through terrain
 
 ## Recipe
 
-Crafted at a **Workbench** with the **Advanced Engineering** perk:
+Crafted at a **Workbench** (requires **Electrician** perk tier 3):
 
 | Ingredient | Count |
 |---|---|
@@ -26,86 +26,26 @@ Crafted at a **Workbench** with the **Advanced Engineering** perk:
 
 ## Installation
 
-1. Build the mod (see below) or use a pre-built `TeleportPads.dll`
-2. Copy the entire `TeleportPads` folder into your game's `Mods` directory:
-   ```
-   7 Days to Die/Mods/TeleportPads/
-       ModInfo.xml
-       TeleportPads.dll
-       Config/
-           blocks.xml
-           recipes.xml
-           Localization.txt
-           XUi/
-               xui.xml
-               windows.xml
-               controls.xml
-   ```
-3. Launch the game. The mod loads automatically.
-
-You do **not** need to copy the `Scripts/`, `Harmony/`, or `build.ps1` files - only the DLL and Config folder are needed at runtime.
+1. Download the latest release from [Releases](https://github.com/gorgarp/7day_teleportation_mod/releases)
+2. Extract the mod folder into your game's `Mods` directory
+3. Launch the game — the mod loads automatically
 
 ## Building from Source
 
-### Requirements
-
-- .NET SDK 8.0 or 10.0 (for the Roslyn compiler)
-- The mod folder must be located at `<GameDir>/Mods/TeleportPads/` so the build script can find game assemblies
-
-### Build
+Requires .NET SDK 8.0+ (for the Roslyn compiler). The mod folder must be at `<GameDir>/Mods/Teleporters/` so the build script can find game assemblies.
 
 ```powershell
-cd "7 Days to Die/Mods/TeleportPads"
+cd "7 Days to Die/Mods/Teleporters"
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-The script:
-1. Locates Roslyn (`csc.dll`) from your installed .NET SDK
-2. References game assemblies from `7DaysToDie_Data/Managed/` and `0Harmony.dll` from `Mods/0_TFP_Harmony/`
-3. Compiles all `.cs` files in `Scripts/` and `Harmony/` into `TeleportPads.dll`
-
-### Output
-
-`TeleportPads.dll` in the mod root. This targets CLR v4.0 (Unity Mono compatible) via `/nostdlib` against the game's own `mscorlib.dll`.
+This compiles all `.cs` files in `Scripts/` and `Harmony/` into `Teleporters.dll`.
 
 ## Usage
 
-1. Craft a Teleport Pad at a workbench
+1. Craft a Teleporter at a workbench
 2. Place it in the world
-3. Press **E** to interact - choose **Edit Name** to name the pad
-4. Place more pads elsewhere and name them
-5. Press **E** on any pad and choose **Teleport** to open the destination picker
-6. Use the search bar to filter, click **Name** or **Dist** to sort, and click **GO** to teleport
-
-## File Structure
-
-```
-TeleportPads/
-    ModInfo.xml              # Mod metadata
-    TeleportPads.dll         # Compiled mod assembly
-    README.md                # This file
-    build.ps1                # Build script (Roslyn)
-    .gitignore               # Excludes build artifacts
-    Config/
-        blocks.xml           # Block definition
-        recipes.xml          # Crafting recipe
-        Localization.txt     # UI text strings
-        XUi/
-            xui.xml          # Window group registration
-            windows.xml      # Teleport picker + naming dialog
-            controls.xml     # Pad entry row template
-    Scripts/
-        BlockTeleportPad.cs          # Block class with activation commands
-        TileEntityTeleportPad.cs     # Tile entity (stores pad name, owner)
-        TeleportPadManager.cs        # Singleton registry, file persistence
-        XUiC_TeleportPadWindow.cs    # Destination picker UI controller
-        XUiC_TeleportPadEntry.cs     # Entry row controller
-        XUiC_TeleportPadNaming.cs    # Naming dialog controller
-        NetPackageTeleportPadSync.cs # Full pad list sync packet
-        NetPackageTeleportPadAdd.cs  # Single pad added packet
-        NetPackageTeleportPadRemove.cs # Pad removed packet
-        NetPackageTeleportPadRename.cs # Pad renamed packet
-    Harmony/
-        TeleportPadsInit.cs          # IModApi entry point
-        TileEntityPatches.cs         # TileEntity.Instantiate patch (type 210)
-```
+3. Press **E** to interact — choose **Edit Name** to name it
+4. Place more teleporters elsewhere and name them
+5. Press **E** on any teleporter and choose **Teleport** to open the destination picker
+6. Use the search bar to filter, click column headers to sort, and click **GO** to teleport

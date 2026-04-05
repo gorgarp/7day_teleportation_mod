@@ -1,18 +1,16 @@
 using Platform;
 using UnityEngine;
 
-public class BlockTeleportPad : Block
+public class BlockTeleporter : Block
 {
-    public BlockTeleportPad()
+    public BlockTeleporter()
     {
         HasTileEntity = true;
-        Log.Out("[TeleportPads] BlockTeleportPad constructor called");
     }
 
     public override void Init()
     {
         base.Init();
-        Log.Out("[TeleportPads] BlockTeleportPad.Init() called for block: " + GetBlockName());
     }
 
     private new BlockActivationCommand[] cmds = new BlockActivationCommand[]
@@ -31,7 +29,7 @@ public class BlockTeleportPad : Block
             return;
         }
 
-        var te = new TileEntityTeleportPad(_chunk);
+        var te = new TileEntityTeleporter(_chunk);
         te.localChunkPos = World.toBlock(_blockPos);
         te.SetOwner(_addedByPlayer ?? PlatformManager.InternalLocalUserIdentifier);
         _chunk.AddTileEntity(te);
@@ -43,8 +41,8 @@ public class BlockTeleportPad : Block
     {
         if (!_blockValue.ischild)
         {
-            TeleportPadManager.Instance.RemovePad(_blockPos);
-            _chunk.RemoveTileEntityAt<TileEntityTeleportPad>((World)world, World.toBlock(_blockPos));
+            TeleporterManager.Instance.RemoveTeleporter(_blockPos);
+            _chunk.RemoveTileEntityAt<TileEntityTeleporter>((World)world, World.toBlock(_blockPos));
         }
         base.OnBlockRemoved(world, _chunk, _blockPos, _blockValue);
     }
@@ -55,11 +53,9 @@ public class BlockTeleportPad : Block
         base.OnBlockLoaded(_world, _clrIdx, _blockPos, _blockValue);
         if (_blockValue.ischild) return;
 
-        var te = _world.GetTileEntity(_clrIdx, _blockPos) as TileEntityTeleportPad;
-        if (te != null && !string.IsNullOrEmpty(te.PadName))
-        {
-            TeleportPadManager.Instance.RegisterPad(_blockPos, te.PadName);
-        }
+        var te = _world.GetTileEntity(_clrIdx, _blockPos) as TileEntityTeleporter;
+        if (te != null && !string.IsNullOrEmpty(te.TeleporterName))
+            TeleporterManager.Instance.RegisterTeleporter(_blockPos, te.TeleporterName);
     }
 
     public override void OnBlockEntityTransformAfterActivated(WorldBase _world, Vector3i _blockPos,
@@ -68,11 +64,9 @@ public class BlockTeleportPad : Block
         base.OnBlockEntityTransformAfterActivated(_world, _blockPos, _cIdx, _blockValue, _ebcd);
         if (_blockValue.ischild) return;
 
-        var te = _world.GetTileEntity(_cIdx, _blockPos) as TileEntityTeleportPad;
-        if (te != null && !string.IsNullOrEmpty(te.PadName))
-        {
-            TeleportPadManager.Instance.RegisterPad(_blockPos, te.PadName);
-        }
+        var te = _world.GetTileEntity(_cIdx, _blockPos) as TileEntityTeleporter;
+        if (te != null && !string.IsNullOrEmpty(te.TeleporterName))
+            TeleporterManager.Instance.RegisterTeleporter(_blockPos, te.TeleporterName);
     }
 
     public override bool HasBlockActivationCommands(WorldBase _world, BlockValue _blockValue,
@@ -84,25 +78,21 @@ public class BlockTeleportPad : Block
     public override string GetActivationText(WorldBase _world, BlockValue _blockValue,
         int _clrIdx, Vector3i _blockPos, EntityAlive _entityFocusing)
     {
-        Log.Out("[TeleportPads] GetActivationText called at " + _blockPos);
-        var te = _world.GetTileEntity(_clrIdx, _blockPos) as TileEntityTeleportPad;
+        var te = _world.GetTileEntity(_clrIdx, _blockPos) as TileEntityTeleporter;
         if (te == null)
-        {
-            Log.Out("[TeleportPads] TileEntity is NULL at " + _blockPos);
-            return "Press [action:Activate] to use Teleport Pad";
-        }
+            return "Press [action:Activate] to use Teleporter";
 
-        if (string.IsNullOrEmpty(te.PadName))
-            return Localization.Get("teleportpad_configure");
+        if (string.IsNullOrEmpty(te.TeleporterName))
+            return Localization.Get("teleporter_configure");
 
-        return string.Format(Localization.Get("teleportpad_use"), te.PadName);
+        return string.Format(Localization.Get("teleporter_use"), te.TeleporterName);
     }
 
     public override BlockActivationCommand[] GetBlockActivationCommands(WorldBase _world,
         BlockValue _blockValue, int _clrIdx, Vector3i _blockPos, EntityAlive _entityFocusing)
     {
-        var te = _world.GetTileEntity(_clrIdx, _blockPos) as TileEntityTeleportPad;
-        bool isNamed = te != null && !string.IsNullOrEmpty(te.PadName);
+        var te = _world.GetTileEntity(_clrIdx, _blockPos) as TileEntityTeleporter;
+        bool isNamed = te != null && !string.IsNullOrEmpty(te.TeleporterName);
         bool isInLandClaim = _world.IsMyLandProtectedBlock(_blockPos,
             _world.GetGameManager().GetPersistentLocalPlayer());
 
@@ -122,7 +112,7 @@ public class BlockTeleportPad : Block
                 _world.GetBlock(parentPos), _player);
         }
 
-        var te = _world.GetTileEntity(_cIdx, _blockPos) as TileEntityTeleportPad;
+        var te = _world.GetTileEntity(_cIdx, _blockPos) as TileEntityTeleporter;
         if (te == null) return false;
 
         switch (commandName)
@@ -132,7 +122,7 @@ public class BlockTeleportPad : Block
                 return true;
 
             case "edit":
-                OpenNamingUI(_player, _blockPos, te);
+                OpenNamingUI(_player, _blockPos, _cIdx, te);
                 return true;
 
             case "take":
@@ -153,11 +143,11 @@ public class BlockTeleportPad : Block
             return OnBlockActivated(_world, _cIdx, parentPos, _world.GetBlock(parentPos), _player);
         }
 
-        var te = _world.GetTileEntity(_cIdx, _blockPos) as TileEntityTeleportPad;
+        var te = _world.GetTileEntity(_cIdx, _blockPos) as TileEntityTeleporter;
         if (te == null) return false;
 
-        if (string.IsNullOrEmpty(te.PadName))
-            OpenNamingUI(_player, _blockPos, te);
+        if (string.IsNullOrEmpty(te.TeleporterName))
+            OpenNamingUI(_player, _blockPos, _cIdx, te);
         else
             OpenTeleportUI(_player, _blockPos);
 
@@ -167,19 +157,20 @@ public class BlockTeleportPad : Block
     private void OpenTeleportUI(EntityPlayerLocal _player, Vector3i _blockPos)
     {
         _player.AimingGun = false;
-        XUiC_TeleportPadWindow.Open(
+        XUiC_TeleporterWindow.Open(
             LocalPlayerUI.GetUIForPlayer(_player),
             _blockPos);
     }
 
-    private void OpenNamingUI(EntityPlayerLocal _player, Vector3i _blockPos,
-        TileEntityTeleportPad te)
+    private void OpenNamingUI(EntityPlayerLocal _player, Vector3i _blockPos, int _cIdx,
+        TileEntityTeleporter te)
     {
         _player.AimingGun = false;
-        XUiC_TeleportPadNaming.Open(
+        XUiC_TeleporterNaming.Open(
             LocalPlayerUI.GetUIForPlayer(_player),
             _blockPos,
-            te.PadName);
+            _cIdx,
+            te.TeleporterName);
     }
 
     private void TakeBlock(WorldBase _world, int _cIdx, Vector3i _blockPos,

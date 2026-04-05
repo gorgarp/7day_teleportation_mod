@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
-public class XUiC_TeleportPadWindow : XUiController
+public class XUiC_TeleporterWindow : XUiController
 {
     public static string ID = "";
 
-    private Vector3i sourcePadPos;
+    private Vector3i sourceTeleporterPos;
     private List<KeyValuePair<Vector3i, string>> allDestinations;
     private List<KeyValuePair<Vector3i, string>> filteredDestinations;
-    private XUiC_TeleportPadEntry[] entryControllers;
+    private XUiC_TeleporterEntry[] entryControllers;
     private XUiC_TextInput searchInput;
     private int currentPage = 0;
     private const int ENTRIES_PER_PAGE = 8;
@@ -22,7 +24,7 @@ public class XUiC_TeleportPadWindow : XUiController
         base.Init();
         ID = WindowGroup.ID;
 
-        entryControllers = GetChildrenByType<XUiC_TeleportPadEntry>();
+        entryControllers = GetChildrenByType<XUiC_TeleporterEntry>();
         foreach (var entry in entryControllers)
             entry.TeleportRequested += OnTeleportRequested;
 
@@ -63,16 +65,16 @@ public class XUiC_TeleportPadWindow : XUiController
         var windowGroup = _playerUI.xui.FindWindowGroupByName(ID);
         if (windowGroup == null) return;
 
-        var controller = windowGroup.GetChildByType<XUiC_TeleportPadWindow>();
+        var controller = windowGroup.GetChildByType<XUiC_TeleporterWindow>();
         if (controller != null)
-            controller.sourcePadPos = _blockPos;
+            controller.sourceTeleporterPos = _blockPos;
 
         _playerUI.windowManager.Open(ID, true);
     }
 
     private void RefreshDestinations()
     {
-        allDestinations = TeleportPadManager.Instance.GetDestinations(sourcePadPos);
+        allDestinations = TeleporterManager.Instance.GetDestinations(sourceTeleporterPos);
         ApplyFilterAndSort();
     }
 
@@ -143,16 +145,16 @@ public class XUiC_TeleportPadWindow : XUiController
     {
         switch (bindingName)
         {
-            case "padcount":
+            case "teleportercount":
                 if (filteredDestinations == null)
                     value = "0";
                 else if (allDestinations != null && filteredDestinations.Count != allDestinations.Count)
-                    value = $"{filteredDestinations.Count} / {allDestinations.Count} pads";
+                    value = $"{filteredDestinations.Count} / {allDestinations.Count} teleporters";
                 else
-                    value = $"{filteredDestinations.Count} pads";
+                    value = $"{filteredDestinations.Count} teleporters";
                 return true;
             case "sourcename":
-                value = TeleportPadManager.Instance.GetPadName(sourcePadPos);
+                value = TeleporterManager.Instance.GetTeleporterName(sourceTeleporterPos);
                 return true;
             case "pageinfo":
                 if (filteredDestinations == null || filteredDestinations.Count == 0)
@@ -213,19 +215,26 @@ public class XUiC_TeleportPadWindow : XUiController
 
     private void OnTeleportRequested(Vector3i destination)
     {
-        Log.Out("[TeleportPads] Teleport requested to " + destination);
         var player = xui.playerUI.entityPlayer;
         if (player == null) return;
 
         xui.playerUI.windowManager.Close(ID);
 
-        var teleportPos = new Vector3(destination.x + 0.5f, destination.y + 1.1f, destination.z + 0.5f);
-        Log.Out("[TeleportPads] Teleporting player to " + teleportPos);
-        player.SetPosition(teleportPos);
+        var destName = TeleporterManager.Instance.GetTeleporterName(destination);
+        var chunkObserver = GameManager.Instance.AddChunkObserver(destination, true, 2, -1);
+        var ctx = SynchronizationContext.Current;
 
-        GameManager.ShowTooltip(player,
-            string.Format(Localization.Get("teleportpad_teleported"),
-            TeleportPadManager.Instance.GetPadName(destination)));
+        Task.Delay(500).ContinueWith(_ =>
+            ctx.Post(__ =>
+            {
+                GameManager.Instance.RemoveChunkObserver(chunkObserver);
+                var teleportPos = new Vector3(destination.x + 0.5f, destination.y + 1.1f, destination.z + 0.5f);
+                player.motion = Vector3.zero;
+                player.SetPosition(teleportPos);
+                player.fallDistance = 0f;
+                GameManager.ShowTooltip(player,
+                    string.Format(Localization.Get("teleporter_teleported"), destName));
+            }, null));
     }
 
     private void OnClosePressed(XUiController _sender, int _mouseButton)

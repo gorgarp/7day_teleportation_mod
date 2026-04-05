@@ -1,6 +1,6 @@
 using HarmonyLib;
 
-namespace TeleportPads.Harmony
+namespace Teleporters.Harmony
 {
     [HarmonyPatch(typeof(TileEntity))]
     [HarmonyPatch("Instantiate")]
@@ -12,7 +12,7 @@ namespace TeleportPads.Harmony
         {
             if ((int)type == TILE_ENTITY_TYPE_ID)
             {
-                __result = new TileEntityTeleportPad(_chunk);
+                __result = new TileEntityTeleporter(_chunk);
                 return false;
             }
             return true;

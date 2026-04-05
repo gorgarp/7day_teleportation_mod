@@ -1,7 +1,7 @@
 $GameDir = Resolve-Path "..\.."
 $ManagedDir = "$GameDir\7DaysToDie_Data\Managed"
 $HarmonyDir = "$GameDir\Mods\0_TFP_Harmony"
-$OutDll = "TeleportPads.dll"
+$OutDll = "Teleporters.dll"
 
 $Sources = @(Get-ChildItem -Recurse -Filter "*.cs" -Path "Scripts","Harmony" | ForEach-Object { $_.FullName })
 

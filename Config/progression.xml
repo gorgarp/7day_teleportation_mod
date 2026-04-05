@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configs>
+    <append xpath="/progression/crafting_skills/crafting_skill[@name='craftingElectrician']/display_entry[@name_key='electricianT3']">
+        <unlock_entry item="teleporter" unlock_tier="1"/>
+    </append>
+    <append xpath="/progression/crafting_skills/crafting_skill[@name='craftingElectrician']/effect_group">
+        <passive_effect name="RecipeTagUnlocked" operation="base_set" level="55,100" value="1" tags="teleporter"/>
+    </append>
+</configs>

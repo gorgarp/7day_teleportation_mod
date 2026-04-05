@@ -1,13 +1,14 @@
 using System;
 using UnityEngine;
 
-public class XUiC_TeleportPadEntry : XUiController
+public class XUiC_TeleporterEntry : XUiController
 {
     public event Action<Vector3i> TeleportRequested;
 
-    private string padName = "";
-    private Vector3i padPosition = Vector3i.zero;
+    private string teleporterName = "";
+    private Vector3i teleporterPosition = Vector3i.zero;
     private string distanceText = "";
+    private XUiC_SimpleButton btnGo;
 
     public override void Init()
     {
@@ -15,31 +16,17 @@ public class XUiC_TeleportPadEntry : XUiController
         OnPress += OnEntryClicked;
 
         var btn = GetChildById("btnGo");
-        if (btn != null)
+        if (btn is XUiC_SimpleButton simpleBtn)
         {
-            btn.OnPress += OnEntryClicked;
-            Log.Out("[TeleportPads] Found btnGo in entry");
-        }
-        else
-        {
-            Log.Out("[TeleportPads] btnGo NOT found, using row click only");
-        }
-
-        for (int i = 0; i < Children.Count; i++)
-        {
-            var child = Children[i];
-            if (child is XUiC_SimpleButton simpleBtn)
-            {
-                simpleBtn.OnPressed += OnEntryClicked;
-                Log.Out("[TeleportPads] Wired XUiC_SimpleButton at index " + i);
-            }
+            btnGo = simpleBtn;
+            btnGo.OnPressed += OnEntryClicked;
         }
     }
 
     public void SetData(string name, Vector3i position)
     {
-        padName = name ?? "";
-        padPosition = position;
+        teleporterName = name ?? "";
+        teleporterPosition = position;
 
         var player = xui?.playerUI?.entityPlayer;
         if (player != null && position != Vector3i.zero)
@@ -60,17 +47,17 @@ public class XUiC_TeleportPadEntry : XUiController
     {
         switch (bindingName)
         {
-            case "padname":
-                value = padName;
+            case "teleportername":
+                value = teleporterName;
                 return true;
             case "distance":
                 value = distanceText;
                 return true;
             case "coords":
-                if (padPosition == Vector3i.zero)
+                if (teleporterPosition == Vector3i.zero)
                     value = "";
                 else
-                    value = $"({padPosition.x}, {padPosition.y}, {padPosition.z})";
+                    value = $"({teleporterPosition.x}, {teleporterPosition.y}, {teleporterPosition.z})";
                 return true;
             default:
                 return base.GetBindingValueInternal(ref value, bindingName);
@@ -79,14 +66,15 @@ public class XUiC_TeleportPadEntry : XUiController
 
     private void OnEntryClicked(XUiController _sender, int _mouseButton)
     {
-        Log.Out("[TeleportPads] Entry clicked: " + padName + " at " + padPosition);
-        if (padPosition != Vector3i.zero)
-            TeleportRequested?.Invoke(padPosition);
+        if (teleporterPosition != Vector3i.zero)
+            TeleportRequested?.Invoke(teleporterPosition);
     }
 
     public override void Cleanup()
     {
         base.Cleanup();
         OnPress -= OnEntryClicked;
+        if (btnGo != null)
+            btnGo.OnPressed -= OnEntryClicked;
     }
 }

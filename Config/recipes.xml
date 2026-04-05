@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <configs>
     <append xpath="/recipes">
-        <recipe name="teleportPad" count="1" craft_area="workbench" tags="perkAdvancedEngineering,learnable,workbenchCrafting">
+        <recipe name="teleporter" count="1" craft_area="workbench" tags="learnable,workbenchCrafting">
             <ingredient name="resourceForgedIron" count="20"/>
             <ingredient name="resourceMechanicalParts" count="4"/>
             <ingredient name="resourceElectricParts" count="8"/>

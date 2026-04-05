@@ -1,12 +1,12 @@
 using Platform;
 using System.Collections.Generic;
 
-public class TileEntityTeleportPad : TileEntity
+public class TileEntityTeleporter : TileEntity
 {
-    public string PadName = "";
+    public string TeleporterName = "";
     public PlatformUserIdentifierAbs OwnerID;
 
-    public TileEntityTeleportPad(Chunk _chunk) : base(_chunk)
+    public TileEntityTeleporter(Chunk _chunk) : base(_chunk)
     {
         OwnerID = null;
     }
@@ -20,7 +20,7 @@ public class TileEntityTeleportPad : TileEntity
     {
         base.read(_br, _eStreamMode);
         _br.ReadByte();
-        PadName = _br.ReadString();
+        TeleporterName = _br.ReadString();
         bool hasOwner = _br.ReadBoolean();
         OwnerID = hasOwner ? PlatformUserIdentifierAbs.FromStream(_br, false, false) : null;
     }
@@ -29,7 +29,7 @@ public class TileEntityTeleportPad : TileEntity
     {
         base.write(_bw, _eStreamMode);
         _bw.Write((byte)1);
-        _bw.Write(PadName ?? "");
+        _bw.Write(TeleporterName ?? "");
         _bw.Write(OwnerID != null);
         if (OwnerID != null)
             OwnerID.ToStream(_bw, false);
@@ -37,9 +37,9 @@ public class TileEntityTeleportPad : TileEntity
 
     public override TileEntity Clone()
     {
-        var te = new TileEntityTeleportPad(chunk);
+        var te = new TileEntityTeleporter(chunk);
         te.localChunkPos = localChunkPos;
-        te.PadName = PadName;
+        te.TeleporterName = TeleporterName;
         te.OwnerID = OwnerID;
         return te;
     }
@@ -47,14 +47,14 @@ public class TileEntityTeleportPad : TileEntity
     public override void CopyFrom(TileEntity _other)
     {
         base.CopyFrom(_other);
-        var other = (TileEntityTeleportPad)_other;
-        PadName = other.PadName;
+        var other = (TileEntityTeleporter)_other;
+        TeleporterName = other.TeleporterName;
         OwnerID = other.OwnerID;
     }
 
-    public void SetPadName(string name)
+    public void SetTeleporterName(string name)
     {
-        PadName = name ?? "";
+        TeleporterName = name ?? "";
         setModified();
     }
 

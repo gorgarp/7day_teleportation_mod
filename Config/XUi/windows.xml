@@ -2,8 +2,8 @@
 <configs>
     <append xpath="/windows">
 
-        <window name="windowTeleportPadSelect" width="460" height="540"
-                controller="TeleportPadWindow, TeleportPads"
+        <window name="windowTeleporterSelect" width="460" height="540"
+                controller="TeleporterWindow, Teleporters"
                 anchor="CenterCenter" panel="Center" cursor_area="true">
 
             <panel name="header" pos="0,0" height="48" depth="5"
@@ -15,7 +15,7 @@
                        effect="outline" justify="left"
                        style="header.name"/>
                 <label depth="6" pos="0,-8" width="440" height="32"
-                       text="TELEPORT" text_key="teleportpad_title"
+                       text="TELEPORT" text_key="teleporter_title"
                        font_size="20" effect="outline" justify="right"
                        color="222,206,163"/>
             </panel>
@@ -47,7 +47,7 @@
 
             <rect name="sortinfo" pos="8,-94" height="20" depth="5">
                 <label depth="6" width="160" height="20"
-                       text="{padcount}" font_size="16"
+                       text="{teleportercount}" font_size="16"
                        effect="outline" justify="left" color="140,140,140"/>
                 <label depth="6" pos="160,0" width="140" height="20"
                        text="{pageinfo}" font_size="16"
@@ -61,10 +61,10 @@
                 <sprite depth="3" name="bgMain" sprite="menu_empty3px"
                         color="32,32,32,240" type="sliced" width="460" height="344"/>
 
-                <grid name="padList" rows="8" cols="1" pos="6,-6"
+                <grid name="teleporterList" rows="8" cols="1" pos="6,-6"
                       width="448" height="332" cell_width="448" cell_height="41"
                       repeat_content="true" arrangement="vertical">
-                    <teleport_pad_entry name="0"/>
+                    <teleporter_entry name="0"/>
                 </grid>
             </rect>
 
@@ -89,8 +89,8 @@
             </rect>
         </window>
 
-        <window name="windowTeleportPadNaming" width="360" height="200"
-                controller="TeleportPadNaming, TeleportPads"
+        <window name="windowTeleporterNaming" width="360" height="200"
+                controller="TeleporterNaming, Teleporters"
                 anchor="CenterCenter" panel="Center" cursor_area="true">
 
             <panel name="header" pos="0,0" height="44" depth="5"
@@ -98,7 +98,7 @@
                 <sprite depth="6" name="windowIcon" width="32" height="32"
                         pos="6,-6" sprite="ui_game_symbol_pen"/>
                 <label depth="6" pos="42,-6" width="310" height="32"
-                       text="NAME PAD" text_key="teleportpad_name_title"
+                       text="NAME TELEPORTER" text_key="teleporter_name_title"
                        font_size="28" effect="outline" style="header.name"/>
             </panel>
 
@@ -107,17 +107,17 @@
                         color="32,32,32,240" type="sliced" width="360" height="70"/>
 
                 <label depth="5" pos="10,-8" width="340" height="22"
-                       text="Enter a name for this pad:" text_key="teleportpad_enter_name"
+                       text="Enter a name for this teleporter:" text_key="teleporter_enter_name"
                        font_size="18" effect="outline" color="180,180,180"/>
 
                 <panel pos="8,-32" depth="4" width="344" height="34"
                        disableautobackground="true">
                     <sprite depth="3" sprite="menu_empty3px" color="64,64,64"
                             type="sliced" width="344" height="34"/>
-                    <textfield name="txtPadName" pos="4,-2" width="336" height="30"
+                    <textfield name="txtTeleporterName" pos="4,-2" width="336" height="30"
                                font_size="24" character_limit="24"
                                focus_on_open="true" close_group_on_tab="true"
-                               virtual_keyboard_prompt="vkPromptTeleportPadName"/>
+                               virtual_keyboard_prompt="vkPromptTeleporterName"/>
                 </panel>
             </rect>
 
@@ -126,7 +126,7 @@
                         color="48,48,48,240" type="sliced" width="360" height="40"/>
 
                 <simplebutton name="btnSave" pos="60,-4" width="110" height="32"
-                              caption_key="teleportpad_save" font_size="20"
+                              caption_key="teleporter_save" font_size="20"
                               defaultcolor="40,100,40" hovercolor="100,255,100"
                               sound="@:Sounds/UI/ui_menu_click.wav"/>
 

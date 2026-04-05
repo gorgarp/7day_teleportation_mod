@@ -1,11 +1,11 @@
 using UnityEngine;
 
-public class NetPackageTeleportPadAdd : NetPackage
+public class NetPackageTeleporterAdd : NetPackage
 {
     private Vector3i _position;
     private string _name;
 
-    public NetPackageTeleportPadAdd Setup(Vector3i position, string name)
+    public NetPackageTeleporterAdd Setup(Vector3i position, string name)
     {
         _position = position;
         _name = name;
@@ -30,7 +30,7 @@ public class NetPackageTeleportPadAdd : NetPackage
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         if (world == null) return;
-        TeleportPadManager.Instance.AddFromNetwork(_position, _name);
+        TeleporterManager.Instance.AddFromNetwork(_position, _name);
     }
 
     public override int GetLength()

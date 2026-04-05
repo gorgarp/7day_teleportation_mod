@@ -1,10 +1,10 @@
 using UnityEngine;
 
-public class NetPackageTeleportPadRemove : NetPackage
+public class NetPackageTeleporterRemove : NetPackage
 {
     private Vector3i _position;
 
-    public NetPackageTeleportPadRemove Setup(Vector3i position)
+    public NetPackageTeleporterRemove Setup(Vector3i position)
     {
         _position = position;
         return this;
@@ -26,7 +26,7 @@ public class NetPackageTeleportPadRemove : NetPackage
     public override void ProcessPackage(World world, GameManager callbacks)
     {
         if (world == null) return;
-        TeleportPadManager.Instance.RemoveFromNetwork(_position);
+        TeleporterManager.Instance.RemoveFromNetwork(_position);
     }
 
     public override int GetLength() => 12;
