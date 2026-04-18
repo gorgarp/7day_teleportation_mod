@@ -228,9 +228,23 @@ public class XUiC_TeleporterWindow : XUiController
             ctx.Post(__ =>
             {
                 GameManager.Instance.RemoveChunkObserver(chunkObserver);
-                var teleportPos = new Vector3(destination.x + 0.5f, destination.y + 1.1f, destination.z + 0.5f);
+
+                var bv = GameManager.Instance.World.GetBlock(destination);
+                byte rot = (byte)(bv.rotation & 3);
+                Vector3 forward = Quaternion.Euler(0f, 90f * rot, 0f) * Vector3.forward;
+                int dx = Mathf.RoundToInt(forward.x);
+                int dz = Mathf.RoundToInt(forward.z);
+
+                var teleportPos = new Vector3(
+                    destination.x + 0.5f + dx,
+                    destination.y + 1.1f,
+                    destination.z + 0.5f + dz);
+
+                float yaw = Mathf.Atan2(-dx, -dz) * Mathf.Rad2Deg;
+
                 player.motion = Vector3.zero;
                 player.SetPosition(teleportPos);
+                player.SetRotation(new Vector3(0f, yaw, 0f));
                 player.fallDistance = 0f;
                 GameManager.ShowTooltip(player,
                     string.Format(Localization.Get("teleporter_teleported"), destName));
